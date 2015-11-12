@@ -92,6 +92,7 @@
       requirejs: repoTargets({
         baseUrl: "src",
         paths: {
+          'lodash': "<%= (grunt.task.current.target.match('shrinkwrap') ? '../build/lodash' : 'empty:') %>",
           'jquery': 'empty:',
           'jquery.ui.widget': 'empty:',
           'jquery.iframe-transport': 'empty:',
@@ -103,22 +104,29 @@
         out: 'build/<%= grunt.task.current.target %>.js',
         name: '<%= grunt.task.current.target %>-full',
         wrap: {
-          start: "/*\n * Cloudinary's JavaScript library - Version <%= pkg.version %>\n * Copyright Cloudinary\n * see https://github.com/cloudinary/cloudinary_js\n */\n"
+          start: "/*\n * Cloudinary's JavaScript library - Version <%= pkg.version %>\n * Copyright Cloudinary\n * see https://github.com/cloudinary/cloudinary_js\n */\n(function() {\n",
+          end: "}());"
         }
       }, function(repo) {
         var o, obj;
-        return o = {
+        o = {
           options: {
             bundles: (
               obj = {},
               obj["" + (repo.match('jquery') ? 'util/jquery' : 'util/lodash')] = ['util'],
               obj
-            ),
-            paths: {
-              'lodash': "" + (repo.match('shrinkwrap') ? 'util/lodash.custom' : 'empty:')
-            }
+            )
           }
         };
+        if (!repo.match('shrinkwrap')) {
+          o.packages = [
+            {
+              'name': 'lodash',
+              'location': '../bower_components/lodash-compat'
+            }
+          ];
+        }
+        return o;
       }),
       clean: {
         build: ["build"],
@@ -197,6 +205,15 @@
             return results;
           })()
         }
+      },
+      lodash: {
+        build: {
+          dest: "build/lodash.js",
+          options: {
+            modifier: "compat",
+            include: ['assign', 'camelCase', 'cloneDeep', 'compact', 'contains', 'defaults', 'difference', 'functions', 'identity', 'isArray', 'isElement', 'isEmpty', 'isFunction', 'isPlainObject', 'isString', 'merge', 'snakeCase', 'trim']
+          }
+        }
       }
     });
     grunt.loadNpmTasks('grunt-contrib-coffee');
@@ -207,8 +224,9 @@
     grunt.loadNpmTasks('grunt-jsdoc');
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-version');
+    grunt.loadNpmTasks('grunt-lodash');
     grunt.registerTask('default', ['coffee', 'requirejs']);
-    return grunt.registerTask('build', ['clean', 'coffee', 'requirejs', 'jsdoc', 'copy:backward-compatible']);
+    return grunt.registerTask('build', ['clean', 'lodash', 'coffee', 'requirejs', 'uglify', 'jsdoc', 'copy:backward-compatible']);
   };
 
 }).call(this);

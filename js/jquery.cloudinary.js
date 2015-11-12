@@ -4,6 +4,7 @@
  * see https://github.com/cloudinary/cloudinary_js
  */
 (function() {
+(function() {
   (function(root, factory) {
     if ((typeof define === 'function') && define.amd) {
       return define('utf8_encode',factory);
@@ -3504,3 +3505,4 @@
 
 }).call(this);
 
+}());

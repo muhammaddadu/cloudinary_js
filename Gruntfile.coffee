@@ -71,6 +71,7 @@ module.exports = (grunt)->
     requirejs: repoTargets
         baseUrl: "src"
         paths: # when optimizing scripts, don't include vendor files
+          'lodash': "<%= (grunt.task.current.target.match('shrinkwrap') ? '../build/lodash' : 'empty:') %>"
           'jquery':                   'empty:'
           'jquery.ui.widget':         'empty:'
           'jquery.iframe-transport':  'empty:'
@@ -87,26 +88,32 @@ module.exports = (grunt)->
              * Copyright Cloudinary
              * see https://github.com/cloudinary/cloudinary_js
              */
+            (function() {
 
+            """
+          end: """
+            }());
             """
       ,
         (repo)->
           o = options:
             bundles:
               "#{if repo.match('jquery') then 'util/jquery' else 'util/lodash'}": ['util']
-            paths:
-              'lodash': "#{if repo.match('shrinkwrap') then 'util/lodash.custom' else 'empty:'}"
-
+          if !repo.match('shrinkwrap')
+            o.packages = [
+              { 'name': 'lodash', 'location': '../bower_components/lodash-compat' }
+            ]
+          o
 
     clean:
       build: ["build"]
       doc: ["doc"]
       js: ["js"]
+
     copy:
       'backward-compatible':
         # For backward compatibility, copy jquery.cloudianry.js and vendor files to the js folder
         files: [
-          {
             expand: true
             flatten: true
             src: [
@@ -120,11 +127,9 @@ module.exports = (grunt)->
               "bower_components/blueimp-file-upload/js/vendor/jquery.ui.widget.js"
             ]
             dest: "js/"
-          }
-          {
+          ,
             src: 'build/cloudinary-jquery-file-upload.js'
             dest: 'js/jquery.cloudinary.js'
-          }
         ]
       dist:
         files: for repo in repos
@@ -150,6 +155,31 @@ module.exports = (grunt)->
           src: ["../pkg/pkg-#{repo}/pkg.json", "../pkg/pkg-#{repo}/package.json"]
           dest: "../pkg/pkg-#{repo}/"
 
+    lodash:
+      build:
+        dest: "build/lodash.js"
+        options:
+          modifier: "compat"
+          include:[
+            'assign'
+            'camelCase'
+            'cloneDeep'
+            'compact'
+            'contains'
+            'defaults'
+            'difference'
+            'functions'
+            'identity'
+            'isArray'
+            'isElement'
+            'isEmpty'
+            'isFunction'
+            'isPlainObject'
+            'isString'
+            'merge'
+            'snakeCase'
+            'trim'
+          ]
   grunt.loadNpmTasks('grunt-contrib-coffee')
   grunt.loadNpmTasks('grunt-contrib-uglify')
   grunt.loadNpmTasks('grunt-contrib-requirejs')
@@ -159,6 +189,7 @@ module.exports = (grunt)->
   grunt.loadNpmTasks('grunt-jsdoc')
   grunt.loadNpmTasks('grunt-karma')
   grunt.loadNpmTasks('grunt-version')
+  grunt.loadNpmTasks('grunt-lodash')
 
   grunt.registerTask('default', ['coffee', 'requirejs'])
-  grunt.registerTask('build', ['clean', 'coffee', 'requirejs', 'jsdoc', 'copy:backward-compatible'])
+  grunt.registerTask('build', ['clean', 'lodash','coffee', 'requirejs', 'uglify','jsdoc', 'copy:backward-compatible'])
