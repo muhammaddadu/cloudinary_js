@@ -2,7 +2,7 @@
 (function() {
   module.exports = function(grunt) {
     var repo, repoTargets, repos;
-    repos = ['cloudinary-core', 'cloudinary-jquery', 'cloudinary-jquery-file-upload'];
+    repos = ['cloudinary-core', 'cloudinary-core-shrinkwrap', 'cloudinary-jquery', 'cloudinary-jquery-file-upload'];
 
     /**
      * Create a task configuration that includes the given options item + a sibling for each target
@@ -56,7 +56,7 @@
             for (i = 0, len = repos.length; i < len; i++) {
               repo = repos[i];
               results.push({
-                src: ["build/" + repo + ".js"],
+                src: ["build/" + repo + ".js", "!*min*"],
                 dest: "build/" + repo + ".min.js",
                 ext: '.min.js'
               });
@@ -92,7 +92,6 @@
       requirejs: repoTargets({
         baseUrl: "src",
         paths: {
-          'lodash': 'empty:',
           'jquery': 'empty:',
           'jquery.ui.widget': 'empty:',
           'jquery.iframe-transport': 'empty:',
@@ -107,14 +106,17 @@
           start: "/*\n * Cloudinary's JavaScript library - Version <%= pkg.version %>\n * Copyright Cloudinary\n * see https://github.com/cloudinary/cloudinary_js\n */\n"
         }
       }, function(repo) {
-        var obj;
-        return {
+        var o, obj;
+        return o = {
           options: {
             bundles: (
               obj = {},
               obj["" + (repo.match('jquery') ? 'util/jquery' : 'util/lodash')] = ['util'],
               obj
-            )
+            ),
+            paths: {
+              'lodash': "" + (repo.match('shrinkwrap') ? 'util/lodash.custom' : 'empty:')
+            }
           }
         };
       }),

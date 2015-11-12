@@ -1,6 +1,7 @@
 module.exports = (grunt)->
   repos = [
     'cloudinary-core',
+    'cloudinary-core-shrinkwrap',
     'cloudinary-jquery',
     'cloudinary-jquery-file-upload'
   ]
@@ -43,7 +44,7 @@ module.exports = (grunt)->
         options:
           sourceMap: true
         files: for repo in repos
-          src: ["build/#{repo}.js"]
+          src: ["build/#{repo}.js", "!*min*"]
           dest: "build/#{repo}.min.js"
           ext: '.min.js'
 
@@ -70,7 +71,6 @@ module.exports = (grunt)->
     requirejs: repoTargets
         baseUrl: "src"
         paths: # when optimizing scripts, don't include vendor files
-          'lodash':                   'empty:'
           'jquery':                   'empty:'
           'jquery.ui.widget':         'empty:'
           'jquery.iframe-transport':  'empty:'
@@ -91,9 +91,12 @@ module.exports = (grunt)->
             """
       ,
         (repo)->
-          options:
+          o = options:
             bundles:
               "#{if repo.match('jquery') then 'util/jquery' else 'util/lodash'}": ['util']
+            paths:
+              'lodash': "#{if repo.match('shrinkwrap') then 'util/lodash.custom' else 'empty:'}"
+
 
     clean:
       build: ["build"]
