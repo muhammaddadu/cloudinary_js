@@ -108,40 +108,39 @@
   ###
 
   jQuery.fn.cloudinary_update = (options = {}) ->
-    responsive_use_stoppoints = options['responsive_use_stoppoints'] ? jQuery.cloudinary.config('responsive_use_stoppoints') ? 'resize'
-    exact = !responsive_use_stoppoints || responsive_use_stoppoints == 'resize' and !options.resizing
-    @filter('img').each ->
+    responsive_use_breakpoints = options['responsive_use_breakpoints'] ? options['responsive_use_stoppoints'] ?
+      jQuery.cloudinary.config('responsive_use_breakpoints') ? jQuery.cloudinary.config('responsive_use_stoppoints') ? 'resize'
+    exact = !responsive_use_breakpoints || responsive_use_breakpoints == 'resize' and !options.resizing
+    @filter('img').each (i, tag)->
+      containerWidth = not 0
       if options.responsive
-          jQuery(this).addClass 'cld-responsive'
+        Util.addClass(tag, "cld-responsive")
       attrs = {}
-      src = Util.getData(this, 'src-cache') or Util.getData(this, 'src')
-      if !src
-        return
-      responsive = Util.hasClass(this, 'cld-responsive') and src.match(/\bw_auto\b/)
-      if responsive
-        container = this.parentNode
-        containerWidth = 0
-        while container and !containerWidth == 0
-          containerWidth = container.clientWidth || 0
-          container = container.parentNode
-        if containerWidth == 0
-          # container doesn't know the size yet. Usually because the image is hidden or outside the DOM.
-          return
-        requestedWidth = if exact then containerWidth else jQuery.cloudinary.calc_breakpoint(this, containerWidth)
-        currentWidth = Util.getData(this, 'width') or 0
-        if requestedWidth > currentWidth
-          # requested width is larger, fetch new image
-          Util.setData(this, 'width', requestedWidth)
-        else
-          # requested width is not larger - keep previous
-          requestedWidth = currentWidth
-        src = src.replace(/\bw_auto\b/g, 'w_' + requestedWidth)
-        attrs.width = null
-        if !options.responsive_preserve_height
-          attrs.height = null
-      # Update dpr according to the device's devicePixelRatio
-      attrs.src = src.replace(/\bdpr_(1\.0|auto)\b/g, 'dpr_' + jQuery.cloudinary.device_pixel_ratio())
-      jQuery(this).attr attrs
+      src = Util.getData(tag, 'src-cache') or Util.getData(tag, 'src')
+      if Util.hasClass(tag, 'cld-responsive') and /\bw_auto\b/.exec(src)
+       containerWidth = 0
+       container = tag
+       while ((container = container?.parentNode) instanceof Element) and !containerWidth
+         containerWidth = Util.width(container)
+       unless containerWidth == 0
+         # Unless container doesn't know the size yet - usually because the image is hidden or outside the DOM.
+
+         requestedWidth = if exact then containerWidth else jQuery.cloudinary.calc_breakpoint(tag, containerWidth)
+         currentWidth = Util.getData(tag, 'width') or 0
+         if requestedWidth > currentWidth
+           # requested width is larger, fetch new image
+           Util.setData(tag, 'width', requestedWidth)
+         else
+           # requested width is not larger - keep previous
+           requestedWidth = currentWidth
+         src = src.replace(/\bw_auto\b/g, 'w_' + requestedWidth)
+         attrs.width = null
+         if !options.responsive_preserve_height
+           attrs.height = null
+      unless containerWidth == 0
+        # Update dpr according to the device's devicePixelRatio
+        attrs.src = src.replace(/\bdpr_(1\.0|auto)\b/g, 'dpr_' + jQuery.cloudinary.device_pixel_ratio())
+        Util.setAttributes(tag, attrs)
     this
 
   webp = null
@@ -167,9 +166,6 @@
 
   jQuery.fn.fetchify = (options) ->
     @cloudinary jQuery.extend(options, 'type': 'fetch')
-
-  cloudinary.CloudinaryJQuery = CloudinaryJQuery
-
 
   jQuery.cloudinary = new CloudinaryJQuery()
   jQuery.cloudinary.fromDocument()
